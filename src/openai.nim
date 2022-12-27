@@ -46,9 +46,9 @@ proc aiGetSync*(apiKey, body: string): JsonNode =
 
 
 proc aiCreateRequest*(
-    apiKey: string,
     prompt = "What is nim-lang",
     model = "text-davinci-003",
+    suffix = "",
     temperature = 0,
     maxTokens = 30,
     top_p = 1,
@@ -76,6 +76,8 @@ proc aiCreateRequest*(
       "best_of": best_of,
     }
 
+  if suffix != "":
+    body["suffix"] = %* suffix
   if logprobs != "":
     body["logprobs"] = %* parseInt(logprobs)
   if stop != "":
@@ -92,7 +94,7 @@ proc aiCreateRequest*(
 proc aiPrompt*(apiKey, prompt: string, maxTokens = 30): JsonNode =
   ## Basic prompt
   let
-    body = aiCreateRequest(apiKey, prompt = prompt, maxTokens = maxTokens)
+    body = aiCreateRequest(prompt = prompt, maxTokens = maxTokens)
 
   return aiGetSync(newHttpClient(), urlCompletion, aiHeaders(apiKey), body)
 

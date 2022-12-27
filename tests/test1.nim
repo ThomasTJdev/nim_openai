@@ -70,7 +70,7 @@ test "custom call":
     question = "Why is Nim-lang the best programming language?"
     max_tokens = 100
 
-  let req = aiCreateRequest(envKey, prompt = question, max_tokens = max_tokens)
+  let req = aiCreateRequest(prompt = question, max_tokens = max_tokens)
   check req == """{"model":"text-davinci-003","prompt":"Why is Nim-lang the best programming language?","temperature":0,"max_tokens":100,"top_p":1,"n":1,"presence_penalty":0,"frequency_penalty":0,"best_of":1}"""
 
   let resp = aiGetSync(envKey, req)
@@ -108,7 +108,7 @@ test "custom call with multiple choices":
     n = 3       # number of choices to return
     best_of = 5 # number of completion (must be higher than n)
 
-  let req = aiCreateRequest(envKey, prompt = question, max_tokens = max_tokens, n = n, best_of = best_of)
+  let req = aiCreateRequest(prompt = question, max_tokens = max_tokens, n = n, best_of = best_of)
   check req == """{"model":"text-davinci-003","prompt":"Why is Nim-lang the best programming language?","temperature":0,"max_tokens":100,"top_p":1,"n":3,"presence_penalty":0,"frequency_penalty":0,"best_of":5}"""
 
   let resp = aiGetSync(envKey, req)
