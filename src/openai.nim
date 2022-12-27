@@ -49,7 +49,7 @@ proc aiCreateRequest*(
     prompt = "What is nim-lang",
     model = "text-davinci-003",
     suffix = "",
-    temperature = 0,
+    temperature = 1.0,
     maxTokens = 30,
     top_p = 1,
     n = 1,
