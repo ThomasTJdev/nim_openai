@@ -7,7 +7,8 @@ import
 
 
 const
-  urlCompletion = "https://api.openai.com/v1/completions"
+  urlCompletionLegacy = "https://api.openai.com/v1/completions"
+  urlCompletion = "https://api.openai.com/v1/chat/completions"
 
 
 
@@ -25,9 +26,9 @@ proc aiGetAsync*(client: AsyncHttpClient, url: string, headers: HttpHeaders, bod
     response = await client.request(url, headers = headers, body = $body, httpMethod = HttpPost)
   return parseJson(await response.body)
 
-proc aiGetAsync*(apiKey, body: string): Future[JsonNode] {.async.} =
+proc aiGetAsync*(apiKey, body: string, openAIendpoint = urlCompletion): Future[JsonNode] {.async.} =
   ## API: Async with one-time client
-  return await aiGetAsync(newAsyncHttpClient(), urlCompletion, aiHeaders(apiKey), body)
+  return await aiGetAsync(newAsyncHttpClient(), openAIendpoint, aiHeaders(apiKey), body)
 
 
 
@@ -38,18 +39,59 @@ proc aiGetSync*(client: HttpClient, url: string, headers: HttpHeaders, body: str
     response = client.request(url, headers = headers, body = $body, httpMethod = HttpPost)
   return parseJson(response.body)
 
-proc aiGetSync*(apiKey, body: string): JsonNode =
+proc aiGetSync*(apiKey, body: string, openAIendpoint = urlCompletion): JsonNode =
   ## API: Sync with one-time client
-  return aiGetSync(newHttpClient(), urlCompletion, aiHeaders(apiKey), body)
-
+  return aiGetSync(newHttpClient(), openAIendpoint, aiHeaders(apiKey), body)
 
 
 
 proc aiCreateRequest*(
     prompt = "What is nim-lang",
+    model = "gpt-4",
+    role = "system",
+    temperature = 1.0,
+    maxTokens = 30,
+    top_p = 1,
+    n = 1,
+    stop = "",
+    presence_penalty = 0,
+    frequency_penalty = 0,
+    user = "",
+    multipleMessages: seq[JsonNode] = @[]
+  ): string =
+  ## Create request body
+
+  var
+    body = %*
+      {
+        "model": model,
+        "messages": [{
+          "role": role,
+          "content": prompt,
+        }],
+        "temperature": temperature,
+        "top_p": top_p,
+        "n": n,
+        "max_tokens": maxTokens,
+        "presence_penalty": presence_penalty,
+        "frequency_penalty": frequency_penalty,
+      }
+
+  if multipleMessages.len > 0:
+    body["messages"] = %* multipleMessages
+  if stop != "":
+    body["stop"] = %* stop
+  if user != "":
+    body["user"] = %* user
+
+  return $body
+
+
+proc aiCreateRequestLegacy*(
+    prompt = "What is nim-lang",
     model = "text-davinci-003",
     suffix = "",
-    temperature = 0,
+    temperature = 0.0,
     maxTokens = 30,
     top_p = 1,
     n = 1,
@@ -91,10 +133,14 @@ proc aiCreateRequest*(
 
 
 
-proc aiPrompt*(apiKey, prompt: string, maxTokens = 30): JsonNode =
+proc aiPrompt*(apiKey, prompt: string, maxTokens = 30, openAIendpoint = urlCompletion): JsonNode =
   ## Basic prompt
   let
-    body = aiCreateRequest(prompt = prompt, maxTokens = maxTokens)
+    body =
+      if openAIendpoint == urlCompletion:
+        aiCreateRequest(prompt = prompt, maxTokens = maxTokens)
+      else:
+        aiCreateRequestLegacy(prompt = prompt, maxTokens = maxTokens)
 
-  return aiGetSync(newHttpClient(), urlCompletion, aiHeaders(apiKey), body)
+  return aiGetSync(newHttpClient(), openAIendpoint, aiHeaders(apiKey), body)
 

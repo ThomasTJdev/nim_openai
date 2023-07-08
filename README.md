@@ -6,6 +6,33 @@ Basic API handling for openAI.
 Uses the specification from: [https://beta.openai.com/docs/api-reference/introduction](https://beta.openai.com/docs/api-reference/introduction)
 
 
+## Changelog
+
+### v1.0.0
+After GTP4 the API has breaking changes. This package still supports the legacy
+calls, but the calling proc has changed.
+
+**Endpoint**
+Default openAI endpoint changed to support GPT4. All call-procs now includes an optional `openAIendpoint` parameter.
+
+```nim
+const
+  urlCompletionLegacy = "https://api.openai.com/v1/completions"
+  urlCompletion = "https://api.openai.com/v1/chat/completions"
+```
+
+```nim
+proc aiPrompt*(apiKey, prompt: string, maxTokens = 30, openAIendpoint = urlCompletion): JsonNode =
+```
+
+**Prompt options**
+The main `aiCreateRequest` which formats the API-call has breaking changes. If
+you still use < GTP4, you need to specify the `openAIendpoint = "legacy-call-url"`.
+
+If you are using >= GTP4 you can rely on the default settings.
+
+
+
 
 ## Authorization
 
@@ -52,12 +79,42 @@ import
 
 let resp = aiPrompt(apiKey, "Why is Nim-lang the best programming language?", maxTokens = 50)
 
-echo resp["choices"][0]["text"]
+echo resp["choices"][0]["message"]["content"]
+
+# Legacy:
+# echo resp["choices"][0]["text"]
 
 # Nim-lang is the best programming language because it is a powerful, statically typed, compiled language that is designed to be fast, efficient, and expressive. It has a simple syntax that is easy to learn and understand, and it is
 ```
 
 ## Custom request
+
+### Current
+
+```nim
+import
+  std/json,
+  openai
+
+let
+  envKey = getEnv("openAIKey")
+  question = "Why is Nim-lang the best programming language?"
+  max_tokens = 100
+  n = 3       # number of choices to return
+
+let req = aiCreateRequest(prompt = question, max_tokens = max_tokens, n = n)
+check req == """{"model":"gpt-4","messages":[{"role":"system","content":"Why is Nim-lang the best programming language?"}],"temperature":0.0,"top_p":1,"n":3,"max_tokens":100,"presence_penalty":0,"frequency_penalty":0}"""
+
+let resp = aiGetSync(envKey, req)
+
+check resp["choices"].len() == 3
+
+echo resp["choices"][1]["message"]["content"]
+
+# Whether a language is \"the best\" is subjective and depends largely on the task at hand, personal preference, or specific project requirements. However, Nim-lang possesses some qualities that can make it stand out for certain situations:\n\n1. Efficiency: Nim compiles to C, C++, and JavaScript, offering efficient performance close to what you would get from these languages.\n\n2. Expressiveness: Nim allows programmers to write high-level code that is both human-understandable and machine-optimized. This balances readability
+```
+
+### Legacy
 
 ```nim
 import
@@ -110,7 +167,7 @@ ____
 ## aiGetAsync*
 
 ```nim
-proc aiGetAsync*(apiKey, body: string): Future[JsonNode] {.async.} =
+proc aiGetAsync*(apiKey, body: string, openAIendpoint = urlCompletion): Future[JsonNode] {.async.} =
 ```
 
 API: Async with one-time client
@@ -132,7 +189,7 @@ ____
 ## aiGetSync*
 
 ```nim
-proc aiGetSync*(apiKey, body: string): JsonNode =
+proc aiGetSync*(apiKey, body: string, openAIendpoint = urlCompletion): JsonNode =
 ```
 
 API: Sync with one-time client
@@ -143,20 +200,17 @@ ____
 ## aiCreateRequest*
 
 ```nim
-proc aiCreateRequest*(
-    apiKey: string,
+proc aiCreateRequestLegacy*(
     prompt = "What is nim-lang",
-    model = "text-davinci-003",
-    temperature = 0,
+    model = "gpt-4",
+    role = "system",
+    temperature = 0.0,
     maxTokens = 30,
     top_p = 1,
     n = 1,
-    logprobs = "",
     stop = "",
     presence_penalty = 0,
     frequency_penalty = 0,
-    best_of = 1,
-    logit_bias = "",
     user = ""
 ): string =
 ```
@@ -169,7 +223,7 @@ ____
 ## aiPrompt*
 
 ```nim
-proc aiPrompt*(apiKey, prompt: string, maxTokens = 30): JsonNode =
+proc aiPrompt*(apiKey, prompt: string, maxTokens = 30, openAIendpoint = urlCompletion): JsonNode =
 ```
 
 Basic prompt
