@@ -8,6 +8,9 @@ Uses the specification from: [https://beta.openai.com/docs/api-reference/introdu
 
 ## Changelog
 
+### v2.0.0
+Default model changed to GPT-5.2. Added support for legacy GPT-4 call with `aiCreateRequestLegacyGTP4`.
+
 ### v1.0.0
 After GTP4 the API has breaking changes. This package still supports the legacy
 calls, but the calling proc has changed.

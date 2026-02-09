@@ -47,6 +47,48 @@ proc aiGetSync*(apiKey, body: string, openAIendpoint = urlCompletion): JsonNode 
 
 proc aiCreateRequest*(
     prompt = "What is nim-lang",
+    model = "gpt-5.2",
+    role = "system",
+    temperature = 1.0,
+    maxTokens = 30,
+    top_p = 1,
+    n = 1,
+    stop = "",
+    presence_penalty = 0,
+    frequency_penalty = 0,
+    user = "",
+    multipleMessages: seq[JsonNode] = @[]
+  ): string =
+  ## Create request body
+
+  var
+    body = %*
+      {
+        "model": model,
+        "messages": [{
+          "role": role,
+          "content": prompt,
+        }],
+        "temperature": temperature,
+        "top_p": top_p,
+        "n": n,
+        "max_completion_tokens": maxTokens,
+        "presence_penalty": presence_penalty,
+        "frequency_penalty": frequency_penalty,
+      }
+
+  if multipleMessages.len > 0:
+    body["messages"] = %* multipleMessages
+  if stop != "":
+    body["stop"] = %* stop
+  if user != "":
+    body["user"] = %* user
+
+  return $body
+
+
+proc aiCreateRequestLegacyGTP4*(
+    prompt = "What is nim-lang",
     model = "gpt-4",
     role = "system",
     temperature = 1.0,
